@@ -1,0 +1,14 @@
+select hour, successful_orders, canceled_orders, round(canceled_orders::decimal/(successful_orders+canceled_orders), 3)::decimal as cancel_rate
+from 
+(select date_part('hour',creation_time)::int as hour, count(order_id) successful_orders
+from orders
+ WHERE  order_id not in (SELECT order_id
+                                FROM   user_actions
+                                WHERE  action = 'cancel_order')
+group by date_part('hour',creation_time)) t1
+join (select date_part('hour',creation_time)::int as hour, count(order_id) canceled_orders
+from orders
+ WHERE  order_id in (SELECT order_id
+                                FROM   user_actions
+                                WHERE  action = 'cancel_order')
+group by date_part('hour',creation_time)) t2 using (hour)
